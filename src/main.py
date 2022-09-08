@@ -1,4 +1,7 @@
 import pandas as pd
+import numpy as np
+import argparse
+
 
 
 def read_data(csv_file):
@@ -10,7 +13,7 @@ def read_data(csv_file):
     :return: dataframe
     """
 
-    df = pd.read_csv(csv_file, sep=',')
+    df = pd.read_csv(csv_file, sep=',', na_values='')
 
     column_names = ['name', 'price']
     for col in column_names:
@@ -21,11 +24,12 @@ def read_data(csv_file):
 
 def remove_titles(df):
     """
-    Remove titles from names.
+    Remove titles (in lower case) from names, remove leading and trailing spaces
     :param df: dataframe from csv file
-    :return: dataframe
+    :return: dataframe with lower case name
     """
-    name_titles = ['dr', 'mr', 'mrs', 'ms', 'jr', 'dds', 'dvm', 'md', 'phd']
+
+    name_titles = ['dr ', 'mr ', 'mrs ', 'ms ', ' jr', 'dds', 'dvm', 'md', 'phd']
     df['name'] = df['name'].str.lower()
     df['name'] = df.name.str.replace('.', '')
     df['name'] = df.name.replace({x:'' for x in name_titles}, regex=True)
@@ -50,23 +54,53 @@ def split_name(df):
 
 
 def add_above100(df):
-    pass
+    """
+    Add a new column, 'above_100': assign value 'true' if 'price is > 100, else empty string.
+    :param df:
+    :return:
+    """
+
+    df['above_100'] = np.where(df['price'].astype('float') > 100, 'true', '')
+    df.head()
+    return df
 
 
 def delete_empty_name(df):
-    pass
+    """
+    Delete empty rows in 'name' column.
+    :param df:
+    :return:
+    """
+    # df[df['name'].astype(bool)]
+    # df_new = df['name'].replace('', np.nan, inplace=True)
+    df.dropna(how='any', inplace=True)
+
+    # df_new = df[df['name'].notna()]
+
+    return df
 
 
 def main():
-    df_processed = read_data('..\data\dataset1.csv')
-    df_processed = remove_titles(df_processed)
-    df_processed = split_name(df_processed)
-    df_processed.head()
+    df_processed = read_data('..\data\dataset2.csv')
+    if df_processed.shape[0] > 0:
+        df_processed = delete_empty_name(df_processed)
+        df_processed = remove_titles(df_processed)
+        df_processed = split_name(df_processed)
+        df_processed = add_above100(df_processed)
+        df_processed.head()
+    else:
+        print('Data file is empty, exiting...')
+        exit(1)
 
     return df_processed
 
 
 if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser()
+    # Required positional argument
+    parser.add_argument('csv_filename', type=str,
+                        help='The csv file name with file extension.')
 
     try:
         main()
