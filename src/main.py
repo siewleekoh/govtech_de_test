@@ -3,7 +3,6 @@ import numpy as np
 import argparse
 
 
-
 def read_data(csv_file):
     """
     Read a csv file;
@@ -80,8 +79,9 @@ def delete_empty_name(df):
     return df
 
 
-def main():
-    df_processed = read_data('..\data\dataset2.csv')
+def main(csv_file):
+    #df_processed = read_data('..\data\dataset2.csv')
+    df_processed = read_data(csv_file)
     if df_processed.shape[0] > 0:
         df_processed = delete_empty_name(df_processed)
         df_processed = remove_titles(df_processed)
@@ -97,12 +97,15 @@ def main():
 
 if __name__ == "__main__":
 
+    # add the argument parser
     parser = argparse.ArgumentParser()
-    # Required positional argument
-    parser.add_argument('csv_filename', type=str,
+    parser.add_argument('Filename', type=str,
                         help='The csv file name with file extension.')
+    args = parser.parse_args()
+    csv_filename = args.Filename
+    print('filename:', csv_filename)
 
     try:
-        main()
+        main(csv_filename)
     except Exception as e:
         print(f'An error has occurred, {e}')
