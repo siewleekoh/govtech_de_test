@@ -4,128 +4,138 @@ import argparse
 import os
 
 
-def read_data(csv_file):
-    """
-    Read a csv file;
-    strip leading and trailing space of all columns.
+class ETL:
+    def __init__(self, csv_filepath, csv_filename):
+        self.filepath = csv_filepath
+        self.filename = csv_filename
+        self.csv_fullpath = os.path.join(self.filepath, self.filename)
+        print(self.csv_fullpath)
+        self.processed_filename = 'processed' + '_' + self.filename
 
-    :param csv_file: csv file name
-    :return: dataframe
-    """
+    def read_data(self):
+        """
+        Read a csv file;
+        strip leading and trailing space of all columns.
 
-    df = pd.read_csv(csv_file, sep=',', na_values='')
+        :param csv_file: csv file name
+        :return: dataframe
+        """
 
-    column_names = ['name', 'price']
-    for col in column_names:
-        df[col] = df[col].astype(str).str.strip()
+        df = pd.read_csv(self.csv_fullpath, sep=',', na_values='')
 
-    return df
+        column_names = ['name', 'price']
+        for col in column_names:
+            df[col] = df[col].astype(str).str.strip()
 
+        return df
 
-def remove_titles(df):
-    """
-    Remove titles (in lower case) from names, remove leading and trailing spaces
-    :param df: dataframe from csv file
-    :return: dataframe with lower case name
-    """
+    def remove_titles(self, df):
+        """
+        Remove titles (in lower case) from names, remove leading and trailing spaces
+        :param df: dataframe from csv file
+        :return: dataframe with lower case name
+        """
 
-    name_titles = ['dr ', 'mr ', 'mrs ', 'ms ', ' jr', 'dds', 'dvm', 'md', 'phd']
-    df['name'] = df['name'].str.lower()
-    df['name'] = df.name.str.replace('.', '')
-    df['name'] = df.name.replace({x:'' for x in name_titles}, regex=True)
-    df['name'] = df['name'].str.strip()
+        name_titles = ['dr ', 'mr ', 'mrs ', 'ms ', ' jr', 'dds', 'dvm', 'md', 'phd']
+        df['name'] = df['name'].str.lower()
+        df['name'] = df.name.str.replace('.', '')
+        df['name'] = df.name.replace({x: '' for x in name_titles}, regex=True)
+        df['name'] = df['name'].str.strip()
 
-    return df
+        return df
 
+    def split_name(self, df):
+        """
+        Split full name to first and last name.
+        :param df: dataframe with titles removed from names
+        :return: dataframe
+        """
+        df['first_name'] = df['name'].str.split(' ').str[0]
+        df['first_name'] = df['first_name'].str.capitalize()
 
-def split_name(df):
-    """
-    Split full name to first and last name.
-    :param df: dataframe with titles removed from names
-    :return: dataframe
-    """
-    df['first_name'] = df['name'].str.split(' ').str[0]
-    df['first_name'] = df['first_name'].str.capitalize()
+        df['last_name'] = df['name'].str.split(' ').str[1]
+        df['last_name'] = df['last_name'].str.capitalize()
 
-    df['last_name'] = df['name'].str.split(' ').str[1]
-    df['last_name'] = df['last_name'].str.capitalize()
+        return df
 
-    return df
+    def add_above100(self, df):
+        """
+        Add a new column, 'above_100': assign value 'true' if 'price is > 100, else empty string.
+        :param df:
+        :return:
+        """
 
+        df['above_100'] = np.where(df['price'].astype('float') > 100, 'true', '')
+        df.head()
+        return df
 
-def add_above100(df):
-    """
-    Add a new column, 'above_100': assign value 'true' if 'price is > 100, else empty string.
-    :param df:
-    :return:
-    """
+    def delete_empty_name(self, df):
+        """
+        Delete empty rows in 'name' column.
+        :type df: object
+        :param df:
+        :return: pandas dataframe
+        """
+        # df[df['name'].astype(bool)]
+        # df_new = df['name'].replace('', np.nan, inplace=True)
+        # df.dropna(how='any', inplace=True)
 
-    df['above_100'] = np.where(df['price'].astype('float') > 100, 'true', '')
-    df.head()
-    return df
+        df_new = df[df['name'] != 'nan']
 
+        return df_new
 
-def delete_empty_name(df):
-    """
-    Delete empty rows in 'name' column.
-    :param df:
-    :return: pandas dataframe
-    """
-    # df[df['name'].astype(bool)]
-    # df_new = df['name'].replace('', np.nan, inplace=True)
-    # df.dropna(how='any', inplace=True)
+    @staticmethod
+    def write_csv(df, folder, out_filename):
+        """
+        Write a df to csv in to a folder location relative of the current working directory.
+        :param df: pandas dataframe
+        :param folder: name of the folder where the csv file should be
+        :param out_filename: output csv file name
+        :return: nothing
+        """
+        cwd = os.getcwd()
+        path = os.path.join(cwd, folder)
+        print('writing to path:', path)
 
-    df_new = df[df['name'] != 'nan']
+        if not os.path.exists(path):
+            os.makedirs(path)
 
-    return df_new
+        df.to_csv(os.path.join(path, out_filename), sep=',', index=False)
 
+    def main(self):
+        df_processed = self.read_data()
+        if df_processed.shape[0] > 0:
+            df_processed = self.delete_empty_name(df_processed)
+            df_processed = self.remove_titles(df_processed)
+            df_processed = self.split_name(df_processed)
+            df_processed = self.add_above100(df_processed)
+            self.write_csv(df_processed, '../output', self.processed_filename)
+        else:
+            print('Data file is empty, exiting...')
+            exit(1)
 
-def write_csv(df, folder, out_filename):
-    """
-    Write a df to csv in specified location.
-    :param df: pandas dataframe
-    :param folder: name of the folder where the csv file should be
-    :param out_filename:output csv file name
-    :return: nothing
-    """
-    cwd = os.getcwd()
-    path = os.path.join(cwd, folder)
-
-    if not os.path.exists(path):
-        os.makedirs(path)
-
-    df.to_csv(os.path.join(path + out_filename), sep=',', index=False)
-
-
-def main(csv_file):
-    #df_processed = read_data('..\data\dataset2.csv')
-    df_processed = read_data(csv_file)
-    if df_processed.shape[0] > 0:
-        df_processed = delete_empty_name(df_processed)
-        df_processed = remove_titles(df_processed)
-        df_processed = split_name(df_processed)
-        df_processed = add_above100(df_processed)
-        write_csv(df_processed, 'output', 'processed_dataset2.csv')
-        df_processed.head()
-    else:
-        print('Data file is empty, exiting...')
-        exit(1)
-
-    return df_processed
+        return df_processed
 
 
 if __name__ == "__main__":
 
     # add the argument parser
     parser = argparse.ArgumentParser()
+    parser.add_argument('Filepath', type=str,
+                        help='The path to the csv file.')
     parser.add_argument('Filename', type=str,
                         help='The csv file name with file extension.')
     args = parser.parse_args()
-    csv_filename = args.Filename
-    print('filename:', csv_filename)
 
+    # parse arguments
+    csv_file_path = args.Filepath
+    csv_file_name = args.Filename
+    print('Filepath:', csv_file_path)
+    print('filename:', csv_file_name)
 
     try:
-        main(csv_filename)
+        etl_job = ETL(csv_file_path, csv_file_name)
+        etl_job.main()
+        print(f'finished processing {csv_file_path}/{csv_file_name}...')
     except Exception as e:
         print(f'An error has occurred, {e}')
