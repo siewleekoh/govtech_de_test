@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import argparse
+import os
 
 
 def read_data(csv_file):
@@ -68,15 +69,32 @@ def delete_empty_name(df):
     """
     Delete empty rows in 'name' column.
     :param df:
-    :return:
+    :return: pandas dataframe
     """
     # df[df['name'].astype(bool)]
     # df_new = df['name'].replace('', np.nan, inplace=True)
-    df.dropna(how='any', inplace=True)
+    # df.dropna(how='any', inplace=True)
 
-    # df_new = df[df['name'].notna()]
+    df_new = df[df['name'] != 'nan']
 
-    return df
+    return df_new
+
+
+def write_csv(df, folder, out_filename):
+    """
+    Write a df to csv in specified location.
+    :param df: pandas dataframe
+    :param folder: name of the folder where the csv file should be
+    :param out_filename:output csv file name
+    :return: nothing
+    """
+    cwd = os.getcwd()
+    path = os.path.join(cwd, folder)
+
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+    df.to_csv(os.path.join(path + out_filename), sep=',', index=False)
 
 
 def main(csv_file):
@@ -87,6 +105,7 @@ def main(csv_file):
         df_processed = remove_titles(df_processed)
         df_processed = split_name(df_processed)
         df_processed = add_above100(df_processed)
+        write_csv(df_processed, 'output', 'processed_dataset2.csv')
         df_processed.head()
     else:
         print('Data file is empty, exiting...')
@@ -104,6 +123,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     csv_filename = args.Filename
     print('filename:', csv_filename)
+
 
     try:
         main(csv_filename)
