@@ -73,6 +73,7 @@ Asynchronous image processing job
 
 
 ### Pros
+Serverless provides scalability.
 Image uploading is decoupled from image processing. Should any services go down, the other can still function and can be retried. The failure risk is lower.
 
 A loosely coupled architecture can be built, which avoids bottlenecks caused by synchronous communication, latency, and input/output operations (IO).
